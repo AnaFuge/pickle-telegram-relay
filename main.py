@@ -28,28 +28,42 @@ def send_telegram_message(chat_id: str, text: str):
         return None
 
 def generate_ai_reply(prompt: str) -> str:
-    """AI API가 설정되어 있으면 호출, 없으면 기본 스마트 로직 실행"""
+    """AI API가 설정되어 있으면 호출 (Google Gemini 또는 OpenAI 자동 감지)"""
     if AI_API_KEY:
-        # OpenAI / 호환 API 호출 예시
         try:
-            url = "https://api.openai.com/v1/chat/completions"
-            headers = {"Authorization": f"Bearer {AI_API_KEY}"}
-            data = {
-                "model": "gpt-4o-mini",
-                "messages": [
-                    {
-                        "role": "system", 
-                        "content": "너는 개인 비서 AI '피클이'야. 사용자는 문정 님이고, 텔레그램 토론방에서 뮤즈봇의 의견에 대해 팩트와 백테스트 데이터를 바탕으로 예의 바르고 날카롭게 답장해야 해."
-                    },
-                    {"role": "user", "content": prompt}
-                ]
-            }
-            res = requests.post(url, headers=headers, json=data, timeout=15).json()
-            return res["choices"][0]["message"]["content"]
+            # 1. Google Gemini API (키가 AIza로 시작)
+            if AI_API_KEY.startswith("AIza"):
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={AI_API_KEY}"
+                payload = {
+                    "contents": [{
+                        "parts": [{
+                            "text": f"너는 개인 비서 AI '피클이'야. 사용자는 문정 님이야. 텔레그램 토론방에서 뮤즈봇의 의견이나 문정 님의 메시지에 대해 팩트와 데이터를 바탕으로 밝고 예의 바르게 2~4줄로 핵심만 답장해줘.\n\n상대방 메시지: {prompt}"
+                        }]
+                    }]
+                }
+                res = requests.post(url, json=payload, timeout=10).json()
+                return res["candidates"][0]["content"]["parts"][0]["text"]
+            
+            # 2. OpenAI API (sk- 로 시작)
+            else:
+                url = "https://api.openai.com/v1/chat/completions"
+                headers = {"Authorization": f"Bearer {AI_API_KEY}"}
+                data = {
+                    "model": "gpt-4o-mini",
+                    "messages": [
+                        {
+                            "role": "system", 
+                            "content": "너는 개인 비서 AI '피클이'야. 사용자는 문정 님이야. 텔레그램 토론방에서 뮤즈봇이나 문정 님의 말에 대해 팩트와 금융 데이터를 바탕으로 밝고 정중하게 2~4줄로 답장해."
+                        },
+                        {"role": "user", "content": prompt}
+                    ]
+                }
+                res = requests.post(url, headers=headers, json=data, timeout=15).json()
+                return res["choices"][0]["message"]["content"]
         except Exception as e:
-            print(f"AI API 오류: {e}")
+            print(f"AI API 호출 오류: {e}")
     
-    # 기본 응답 템플릿
+    # API 키가 없을 때 기본 템플릿
     return f"뮤즈봇 님의 말씀 잘 들었습니다! 말씀해 주신 내용('{prompt[:40]}...')에 대해 백테스트 수치와 퀀트 지표를 대조하여 추가 분석을 진행하겠습니다. 문정 님의 자산 방어를 최우선으로 검토할게요."
 
 @app.get("/")
