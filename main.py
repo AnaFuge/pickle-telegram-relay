@@ -28,11 +28,31 @@ def send_telegram_message(chat_id: str, text: str):
         return None
 
 def generate_ai_reply(prompt: str) -> str:
-    """AI API가 설정되어 있으면 호출 (Google Gemini 또는 OpenAI 자동 감지)"""
+    """AI API가 설정되어 있으면 호출 (xAI Grok, Google Gemini, OpenAI 자동 감지)"""
     if AI_API_KEY:
         try:
-            # 1. Google Gemini API (키가 AIza로 시작)
-            if AI_API_KEY.startswith("AIza"):
+            # 1. xAI Grok API (키가 xai- 로 시작)
+            if AI_API_KEY.startswith("xai-"):
+                url = "https://api.x.ai/v1/chat/completions"
+                headers = {
+                    "Authorization": f"Bearer {AI_API_KEY}",
+                    "Content-Type": "application/json"
+                }
+                data = {
+                    "model": "grok-2-mini",
+                    "messages": [
+                        {
+                            "role": "system", 
+                            "content": "너는 xAI Grok의 명쾌한 두뇌를 탑재한 비서 AI '피클이'야. 사용자는 문정 님이야. 텔레그램 토론방에서 뮤즈봇이나 문정 님의 질문에 대해 팩트와 최신 데이터에 기반하여 솔직하고 위트 있게 2~4줄로 명쾌하게 답장해줘."
+                        },
+                        {"role": "user", "content": prompt}
+                    ]
+                }
+                res = requests.post(url, headers=headers, json=data, timeout=15).json()
+                return res["choices"][0]["message"]["content"]
+
+            # 2. Google Gemini API (키가 AIza 로 시작)
+            elif AI_API_KEY.startswith("AIza"):
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={AI_API_KEY}"
                 payload = {
                     "contents": [{
@@ -44,7 +64,7 @@ def generate_ai_reply(prompt: str) -> str:
                 res = requests.post(url, json=payload, timeout=10).json()
                 return res["candidates"][0]["content"]["parts"][0]["text"]
             
-            # 2. OpenAI API (sk- 로 시작)
+            # 3. OpenAI API (sk- 로 시작)
             else:
                 url = "https://api.openai.com/v1/chat/completions"
                 headers = {"Authorization": f"Bearer {AI_API_KEY}"}
