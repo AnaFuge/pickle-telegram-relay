@@ -41,7 +41,7 @@
 웹 브라우저(크롬, 사파리 등) 주소창에 아래 한 줄을 그대로 복사해서 엔터를 칩니다:
 
 ```text
-https://api.telegram.org/bot9183049769:AAGFoMP_KBxP6JzQYb5QJ0LjNHzP1CUBHME/setWebhook?url=https://[내-Render-주소].onrender.com/webhook
+https://api.telegram.org/bot<YOUR_TELEGRAM_BOT_TOKEN>/setWebhook?url=https://[내-Render-주소].onrender.com/webhook
 ```
 *(예: `url=https://my-pickle-relay.onrender.com/webhook`)*
 
